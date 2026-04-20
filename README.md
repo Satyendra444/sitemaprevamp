@@ -89,9 +89,9 @@ Compare multiple models (Min 2, Max 4).
 | **Dealer Landing** | `/{category}-dealers` |
 | **Dealer Brand** | `/{category}-dealers/{brand}` |
 | **Dealer City** | `/{category}-dealers/{brand}/{city}` |
-| **Service Landing** | `/{category}-servicecenters` |
-| **Service Brand** | `/{category}-servicecenters/{brand}` |
-| **Service City** | `/{category}-servicecenters/{brand}/{city}` |
+| **Service Landing** | `/{category}-service-centers` (legacy: `/{category}-servicecenters`) |
+| **Service Brand** | `/{category}-service-centers/{brand}` |
+| **Service City** | `/{category}-service-centers/{brand}/{city}` |
 
 ---
 
@@ -134,14 +134,64 @@ These pages are no longer active.
 ## 11. Static & Company Information
 | Page | URL |
 | :--- | :--- |
-| About Us | `/about` |
-| Contact Us | `/contact` |
+| About Us | `/about-us` (legacy: `/about`) |
+| Contact Us | `/contact-us` (legacy: `/contact`) |
 | Privacy Policy | `/privacy-policy` |
 | Terms & Conditions | `/terms` |
+| Connect With Us | `/connect-with-us` |
 | Advertise With Us | `/advertise` |
 | Feedback | `/feedback` |
 | Careers | `/careers` |
 
 ---
 *Note: All pages follow the Base/EN/HI locale structure.*
-# sitemaprevamp
+
+## 12. Dynamic Sitemap Validation (Playwright)
+
+This repository contains an automated validation suite for dynamic sitemap quality and SEO hygiene.
+
+### Coverage Summary
+- Root sitemap index validation and child sitemap discovery.
+- URL structure checks for static, models, variants, reviews, prices, filters, compare, dealers, service centers, charging, news, blog, and web stories.
+- SEO hygiene checks on sampled URLs:
+  - must return `200`
+  - must not redirect (`301`/`302`)
+  - must not include `noindex`
+  - canonical must match page URL
+  - must not be blocked by `robots.txt`
+- PRD limit checks:
+  - max `10,000` URLs per sitemap
+  - max `20MB` sitemap XML file size
+- Business-rule sanity checks:
+  - static category/footer coverage
+  - filter URL depth guard (`/{category}/{primary}/{secondary}` max)
+  - thin-content signal detection on sampled business pages
+
+### Test Files
+- `tests/specs/sitemap-index.spec.ts`
+- `tests/specs/sitemap-static.spec.ts`
+- `tests/specs/sitemap-models.spec.ts`
+- `tests/specs/sitemap-filters.spec.ts`
+- `tests/specs/sitemap-dealers.spec.ts`
+- `tests/specs/sitemap-content.spec.ts`
+- `tests/specs/sitemap-charging.spec.ts`
+- `tests/specs/sitemap-seo-hygiene.spec.ts`
+- `tests/specs/sitemap-prd-limits.spec.ts`
+- `tests/specs/sitemap-prd-business-rules.spec.ts`
+
+### Run Commands
+```bash
+npm install
+npx playwright test --list
+npx playwright test
+```
+
+Run only PRD-specific suites:
+
+```bash
+npx playwright test tests/specs/sitemap-prd-limits.spec.ts tests/specs/sitemap-prd-business-rules.spec.ts
+```
+
+### Environment
+- Default base URL is configured in `playwright.config.ts`.
+- Current test data points to `https://dev.91trucks.com` via `tests/data/sitemap.config.ts`.
