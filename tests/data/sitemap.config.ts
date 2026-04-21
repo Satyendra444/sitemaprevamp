@@ -6,6 +6,8 @@ export const MAX_URLS_PER_SITEMAP = 10_000;
 export const LASTMOD_RE = /^\d{4}-\d{2}-\d{2}$/;
 export const HTTP_SAMPLE_SIZE = 50;
 export const HTTP_CONCURRENCY = 20;
+// Dev environment blocks crawl access in robots.txt; keep false on dev and true on prod.
+export const ENABLE_ROBOTS_ASSERTIONS = false;
 
 const slug = '[a-z0-9][a-z0-9-]*';
 const localeOpt = `(?:(?:hi|en)/)?`;

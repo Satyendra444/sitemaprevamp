@@ -21,9 +21,10 @@ test.describe('PRD business-rule sanity checks', () => {
   test('static sitemap includes category and footer-family URLs', async ({ request }) => {
     const staticDesc = CHILD_SITEMAPS.find(d => d.group === 'static');
     test.skip(!staticDesc, 'Static sitemap descriptor missing');
+    const desc = staticDesc!;
 
     const sitemapPage = new SitemapPage(request);
-    const result = await sitemapPage.fetchChildSitemap(staticDesc.url);
+    const result = await sitemapPage.fetchChildSitemapResolved(desc.url);
     expect(result.statusCode).toBe(200);
 
     const locs = new Set(result.entries.map(e => e.loc.replace(`${DEV_BASE}/en`, DEV_BASE)));
@@ -51,7 +52,7 @@ test.describe('PRD business-rule sanity checks', () => {
     const filterSitemaps = pickByGroup('filters');
 
     for (const desc of filterSitemaps) {
-      const result = await sitemapPage.fetchChildSitemap(desc.url);
+      const result = await sitemapPage.fetchChildSitemapResolved(desc.url);
       if (result.statusCode !== 200) continue;
 
       const invalid = result.entries.filter(entry => {
@@ -81,7 +82,7 @@ test.describe('PRD business-rule sanity checks', () => {
     const violations: string[] = [];
 
     for (const desc of targetGroups) {
-      const sitemap = await sitemapPage.fetchChildSitemap(desc.url);
+      const sitemap = await sitemapPage.fetchChildSitemapResolved(desc.url);
       if (sitemap.statusCode !== 200 || sitemap.entries.length === 0) continue;
 
       for (const entry of sitemap.entries.slice(0, 20)) {

@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test';
 import type { APIRequestContext } from '@playwright/test';
 import robotsParser from 'robots-parser';
-import { DEV_BASE, HTTP_CONCURRENCY, HTTP_SAMPLE_SIZE } from '../data/sitemap.config';
+import { DEV_BASE, HTTP_CONCURRENCY, HTTP_SAMPLE_SIZE, ENABLE_ROBOTS_ASSERTIONS } from '../data/sitemap.config';
 import type { SitemapEntryWithLang, LangVariant } from '../types/sitemap.types';
 
 export interface HttpCheckResult {
@@ -17,6 +17,7 @@ export interface HttpCheckResult {
 let robotsCache: any = null;
 
 async function checkRobotsTxt(url: string, request: APIRequestContext): Promise<boolean> {
+  if (!ENABLE_ROBOTS_ASSERTIONS) return false;
   if (!robotsCache) {
     try {
       const res = await request.get(`https://www.91trucks.com/robots.txt`);

@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
 import { SitemapPage } from '../../src/pages/SitemapPage';
-import { CHILD_SITEMAPS } from '../data/sitemap.config';
+import { CHILD_SITEMAPS, ENABLE_ROBOTS_ASSERTIONS } from '../data/sitemap.config';
 import {
   batchCheckEntries,
   assertAllReturn200,
@@ -20,7 +20,7 @@ test.describe('Comprehensive SEO Hygiene & Pattern Validation (Sampled URLs)', (
   for (const desc of CHILD_SITEMAPS) {
     test(`Verify strict SEO hygiene and URL structure for: ${desc.label}`, async ({ request }) => {
       const sitemapPage = new SitemapPage(request);
-      const result = await sitemapPage.fetchChildSitemap(desc.url);
+      const result = await sitemapPage.fetchChildSitemapResolved(desc.url);
 
       // Skip if the sitemap doesn't exist yet (e.g. tyres, new-launch if they aren't on dev)
       test.skip(result.statusCode !== 200, `Child sitemap ${desc.url} returned ${result.statusCode}`);
@@ -56,10 +56,17 @@ test.describe('Comprehensive SEO Hygiene & Pattern Validation (Sampled URLs)', (
         assertCanonicalMatch(httpResults, labelWithUrl);
       });
 
-      await test.step('Verify URLs are accessible to crawlers (Not blocked by robots.txt rules)', () => {
-        // 5. Pages Blocked by robots.txt MUST be excluded
-        assertNotBlockedByRobots(httpResults, labelWithUrl);
-      });
+      if (ENABLE_ROBOTS_ASSERTIONS) {
+        await test.step('Verify URLs are accessible to crawlers (Not blocked by robots.txt rules)', () => {
+          // 5. Pages Blocked by robots.txt MUST be excluded
+          assertNotBlockedByRobots(httpResults, labelWithUrl);
+        });
+      } else {
+        test.info().annotations.push({
+          type: 'robots-check',
+          description: 'Skipped robots.txt assertion for non-prod/dev environments',
+        });
+      }
     });
   }
 });

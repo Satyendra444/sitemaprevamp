@@ -79,6 +79,51 @@ export async function fetchAndParseSitemap(url: string, request: APIRequestConte
   return { xml, statusCode, entries, isIndex, childUrls };
 }
 
+export async function fetchAndParseSitemapResolved(
+  url: string,
+  request: APIRequestContext,
+  visited = new Set<string>()
+): Promise<FetchResult> {
+  const current = await fetchAndParseSitemap(url, request);
+  if (!current.isIndex || current.childUrls.length === 0 || current.statusCode !== 200) {
+    return current;
+  }
+
+  const aggregated: SitemapEntryWithLang[] = [];
+  const discoveredChildUrls = new Set<string>(current.childUrls);
+  const queued = [...current.childUrls];
+  visited.add(url);
+
+  while (queued.length > 0) {
+    const nextUrl = queued.shift()!;
+    if (visited.has(nextUrl)) continue;
+    visited.add(nextUrl);
+
+    const next = await fetchAndParseSitemap(nextUrl, request);
+    if (next.statusCode !== 200) continue;
+
+    if (next.isIndex) {
+      for (const nested of next.childUrls) {
+        discoveredChildUrls.add(nested);
+        if (!visited.has(nested)) queued.push(nested);
+      }
+    } else {
+      aggregated.push(...next.entries);
+    }
+  }
+
+  const uniqueByLoc = new Map<string, SitemapEntryWithLang>();
+  for (const entry of aggregated) {
+    uniqueByLoc.set(entry.loc, entry);
+  }
+
+  return {
+    ...current,
+    entries: [...uniqueByLoc.values()],
+    childUrls: [...discoveredChildUrls],
+  };
+}
+
 export function parseSitemapXml(xml: string): SitemapEntryWithLang[] {
   const urlBlocks = extractTagContent(xml, 'url');
   return urlBlocks

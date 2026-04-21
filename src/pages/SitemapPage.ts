@@ -1,5 +1,5 @@
 import type { APIRequestContext } from '@playwright/test';
-import { fetchAndParseSitemap } from '../../tests/helpers/sitemap.parser';
+import { fetchAndParseSitemap, fetchAndParseSitemapResolved } from '../../tests/helpers/sitemap.parser';
 import type { FetchResult } from '../../tests/helpers/sitemap.parser';
 import { SITEMAP_ROOT_URL } from '../../tests/data/sitemap.config';
 
@@ -16,5 +16,9 @@ export class SitemapPage {
 
   async fetchChildSitemap(url: string): Promise<FetchResult> {
     return fetchAndParseSitemap(url, this.request);
+  }
+
+  async fetchChildSitemapResolved(url: string): Promise<FetchResult> {
+    return fetchAndParseSitemapResolved(url, this.request);
   }
 }

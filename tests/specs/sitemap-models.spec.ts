@@ -14,7 +14,7 @@ test.describe('Models, Variants, Reviews, and Prices Sitemaps', () => {
   for (const desc of modelGroups) {
     test(`Structure and patterns for ${desc.label}`, async ({ request }) => {
       const sitemapPage = new SitemapPage(request);
-      const result = await sitemapPage.fetchChildSitemap(desc.url);
+      const result = await sitemapPage.fetchChildSitemapResolved(desc.url);
       
       expect(result.statusCode).toBe(200);
       assertSitemapStructure(result.entries, desc.urlPattern, desc.label);

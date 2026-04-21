@@ -153,6 +153,7 @@ This repository contains an automated validation suite for dynamic sitemap quali
 ### Coverage Summary
 - Root sitemap index validation and child sitemap discovery.
 - URL structure checks for static, models, variants, reviews, prices, filters, compare, dealers, service centers, charging, news, blog, and web stories.
+- Nested sitemap support: if a sitemap URL points to another `.xml` sitemap index, tests recursively resolve and validate final page URLs inside split sitemap files.
 - SEO hygiene checks on sampled URLs:
   - must return `200`
   - must not redirect (`301`/`302`)
@@ -178,6 +179,7 @@ This repository contains an automated validation suite for dynamic sitemap quali
 - `tests/specs/sitemap-seo-hygiene.spec.ts`
 - `tests/specs/sitemap-prd-limits.spec.ts`
 - `tests/specs/sitemap-prd-business-rules.spec.ts`
+- `tests/specs/sitemap-prd-coverage.spec.ts`
 
 ### Run Commands
 ```bash
@@ -195,3 +197,6 @@ npx playwright test tests/specs/sitemap-prd-limits.spec.ts tests/specs/sitemap-p
 ### Environment
 - Default base URL is configured in `playwright.config.ts`.
 - Current test data points to `https://dev.91trucks.com` via `tests/data/sitemap.config.ts`.
+- `tests/data/sitemap.config.ts` includes `ENABLE_ROBOTS_ASSERTIONS`:
+  - set `false` for dev (when robots.txt disallows crawl globally)
+  - set `true` for prod-ready validation

@@ -9,7 +9,7 @@ test.describe('Electric Charging Stations Sitemap', () => {
   test(`Structure and patterns for ${desc?.label}`, async ({ request }) => {
     test.skip(!desc, 'Sitemap descriptor not found');
     const sitemapPage = new SitemapPage(request);
-    const result = await sitemapPage.fetchChildSitemap(desc.url);
+    const result = await sitemapPage.fetchChildSitemapResolved(desc.url);
     
     expect(result.statusCode).toBe(200);
     assertSitemapStructure(result.entries, desc.urlPattern, desc.label);
