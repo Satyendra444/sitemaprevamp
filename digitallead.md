@@ -2,6 +2,133 @@
 
 This document defines the complete lifecycle for digital lead calling and closure handling across all cases.
 
+## Inventix Retail Lead End-to-End Flow
+
+This section covers the complete upstream journey for Inventix digital/retail leads from Facebook Ads intake up to call handling and deal creation.
+
+### End-to-End Flow Diagram
+
+```mermaid
+flowchart LR
+    A[Facebook Lead Ads] --> B[Facebook Webhook Capture]
+    B --> C[Admin Panel: Retail Leads Intake]
+    C --> D[Backend Processing and Enrichment]
+    D --> E{Valid lead payload ready?}
+    E -->|No| F[Log error or fallback mapping and keep lead visible for review]
+    E -->|Yes| G[Push lead to LMS Inventix Leads section]
+    G --> H[LMS creates lead and flags duplicate if applicable]
+    H --> I[Push lead to Ozonetel for calling]
+    I --> J[Ozonetel calling attempts and dispositions]
+    J --> K[LMS receives webhook updates]
+    K --> L{Disposition / event type}
+    L -->|Follow-up| M[Follow-up retry flow in LMS]
+    L -->|Interested_Store_Visit| N[Create or update deal in Inventix]
+    L -->|Not Interested| O[Close lead as Not Interested]
+    L -->|No webhook| P[Run no-answer retry logic]
+    N --> Q[Inventix visit tracking]
+    Q --> R[LMS receives visited event]
+    R --> S[Mark lead Converted and stop further calls]
+    M --> J
+    P --> J
+```
+
+### Step-by-Step Flow Explanation
+
+1. **Facebook Lead Capture**
+   - Facebook Lead Ads sends lead data through the existing webhook integration.
+   - Mandatory fields captured: `Name`, `Phone Number`, `State`, `City`.
+   - Phone number must be validated as a 10-digit India-format mobile number.
+
+2. **Admin Panel Intake**
+   - Lead is stored in the admin panel as raw input plus processed pipeline entry.
+   - Lead should land under a dedicated `Retail Leads` / `Inventix Digital Leads` section.
+   - If business requires, the same section should also support manual uploads beyond Facebook.
+
+3. **Backend Processing and Enrichment**
+   - System maps pincode using `State + City` from internal DB.
+   - If mapping is unavailable, fallback pincode is picked from the Google Sheet state-level mapping.
+   - Default values applied at creation:
+     - `Model = Tata ACE`
+     - `Make = TATA`
+   - `Store` is derived from Facebook form ID to store mapping shared by media team.
+   - Duplicate blocking is disabled, but duplicate records must still be flagged in LMS for visibility.
+
+4. **Admin Panel to LMS Push**
+   - As soon as the lead lands in the admin panel, the backend pushes it to LMS through API integration.
+   - LMS should create the lead under a separate `Inventix Leads` section/module within Lead Management.
+
+5. **LMS to Ozonetel Calling Flow**
+   - LMS pushes the lead to Ozonetel for calling.
+   - Ozonetel returns dispositions through webhook.
+   - LMS continues to own status, counters, retries, and terminal outcomes.
+
+6. **LMS to Inventix Deal Flow**
+   - When the lead becomes `Interested_Store_Visit`, LMS creates or updates a deal in Inventix.
+   - Visit-date based calling continues through LMS.
+   - Only Inventix visited event marks final conversion in LMS.
+
+### Test Points on Each Step in the Flow
+
+#### 1. Facebook Lead Capture
+
+- Verify webhook is triggered in real time after form submission.
+- Verify mandatory fields `Name`, `Phone Number`, `State`, and `City` are received.
+- Verify invalid phone numbers (less than or more than 10 digits) are rejected or flagged.
+- Verify duplicate Facebook submissions are still accepted for this flow.
+- Verify webhook failure or malformed payload is logged for debugging.
+
+#### 2. Admin Panel Intake
+
+- Verify lead is created in the correct `Retail Leads` / `Inventix Digital Leads` section.
+- Verify both raw payload and processed entry are stored.
+- Verify manual upload flow can create records in the same section, if enabled.
+- Verify leads are visible to operations team with source details.
+
+#### 3. Backend Processing and Enrichment
+
+- Verify pincode is mapped correctly using `State + City`.
+- Verify fallback pincode is applied when city mapping is missing.
+- Verify fallback usage is logged for audit/debugging.
+- Verify default `Model = Tata ACE` and `Make = TATA` are assigned at creation.
+- Verify `Store` is derived correctly from Facebook form ID mapping.
+- Verify lead is still processed even when duplicate phone number exists in media leads or Inventix leads.
+- Verify duplicate flag/status is added in LMS instead of blocking the lead.
+
+#### 4. Admin Panel to LMS Push
+
+- Verify API push happens automatically after admin panel intake.
+- Verify lead is created in the correct LMS module: `Inventix Leads`.
+- Verify all enriched fields are transferred correctly: `Name`, `Phone`, `State`, `City`, `Pincode`, `Model`, `Make`, `Store`.
+- Verify API failures are retried or logged without silent data loss.
+- Verify duplicate leads are allowed into LMS and marked correctly.
+
+#### 5. LMS to Ozonetel Calling
+
+- Verify LMS pushes newly created Inventix lead to Ozonetel.
+- Verify Ozonetel dispositions are received back in LMS through webhook.
+- Verify no-answer logic triggers re-push after 4 days and closes after second failed window.
+- Verify follow-up logic retries every 2 days and closes after 3 unresolved cycles.
+- Verify Not Interested closes lead immediately.
+- Verify late or duplicate webhooks do not corrupt counters or state.
+
+#### 6. Interested to Inventix Deal Creation
+
+- Verify `Interested_Store_Visit` creates or updates a deal in Inventix.
+- Verify provided visit date is stored correctly.
+- Verify missing visit date is auto-derived as `interested date + 5 days`.
+- Verify LMS schedules D-1, D, and D+1 calls correctly.
+- Verify new visit date updates overwrite old date in Inventix.
+- Verify `interest_confirmed_calling` does not mark conversion.
+
+#### 7. Inventix to LMS Conversion Update
+
+- Verify visited event from Inventix marks lead as `Converted` in LMS.
+- Verify once converted, all pending future calls stop.
+- Verify visited event for invalid/non-matching lead is rejected or logged safely.
+- Verify terminal leads (`Converted`, `Invalid`, `Not Interested`) do not re-enter workflow.
+
+---
+
 ## System Entities
 
 - **LMS**: Source system and lead state owner.
